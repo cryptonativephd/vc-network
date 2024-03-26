@@ -140,14 +140,18 @@
 
             // Draw labels
             const labelElements = g.selectAll(".label")
-                .data(nodes)
-                .enter()
-                .append("text")
-                .attr("x", d => d.x)
-                .attr("y", d => d.y + 15 + Math.min(d.id.length, 10))
-                .text(d => `${d.id}${d.coInvestments ? ` (${d.coInvestments})` : ''}`)
-                .attr("font-size", "12px")
-                .style("text-anchor", "middle");
+                                    .data(nodes)
+                                    .enter()
+                                    .append("text")
+                                    .attr("x", d => d.x)
+                                    .attr("y", (d, i) => {
+                                        // Dynamic Y positioning to mitigate overlap, offset increases with text length
+                                        const offset = d.id.length > 10 ? 20 : 15; // Adjust this logic as needed
+                                        return d.y + offset;
+                                    })
+                                    .text(d => `${d.id}${d.coInvestments ? ` (${d.coInvestments})` : ''}`)
+                                    .attr("font-size", "12px")
+                                    .style("text-anchor", "middle");
 
             // Add interactivity
             nodeElements.on('click', function(event, d) {
