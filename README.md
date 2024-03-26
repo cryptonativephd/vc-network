@@ -27,4 +27,4 @@ During fundraising I faced this issue the first time around, I always knew I had
 This was also the case when I was a VC - I met other VCs but was unsure of whom best to ask!
 
 ## Feedback
-We love to hear from our users! If you have any feedback, suggestions, or feature requests, feel free to reach out directly via [Twitter](https://twitter.com/advaitjayant).
+I love to hear from our users! If you have any feedback, suggestions, or feature requests, feel free to reach out directly via [Twitter](https://twitter.com/advaitjayant).
