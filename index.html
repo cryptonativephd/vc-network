@@ -121,34 +121,10 @@
 
             // Create the simulation
             const simulation = d3.forceSimulation(nodes)
-                                    .force("charge", d3.forceManyBody().strength(-120)) // Increase repulsion
-                                    .force("collide", d3.forceCollide().radius(20)) // Increase radius to avoid overlap and add space
-                                    .force("center", d3.forceCenter(width / 2, height / 2)) // Keep the graph centered
-                                    .force("link", d3.forceLink(links).id(d => d.id).distance(100)) // Adjust link distance for spacing
-                                    .on("tick", ticked);
-
-            const nodes = g.selectAll(".node")
-                            .data(graphData.nodes)
-                            .enter().append("g")
-                            .attr("class", "node");
-                
-            nodes.append("circle")
-                .attr("r", 5)
-                .style("fill", d => colorScale(d.group));
-            
-            nodes.append("text")
-                .text(d => d.id)
-                .attr("font-size", "10px")
-                .attr("text-anchor", "middle")
-                .attr("dy", "-1em"); // Position the text above the circle
-            
-            // Example setup for links
-            const links = g.selectAll(".link")
-                .data(graphData.links)
-                .enter().append("line")
-                .attr("class", "link")
-                .style("stroke-width", d => Math.sqrt(d.value));
-
+                .force('collide', d3.forceCollide(nodeRadius => 5 + 1))
+                .force('x', d3.forceX(d => d.fx || centerX + d.radius * Math.cos(d.theta)).strength(1))
+                .force('y', d3.forceY(d => d.fy || centerY + d.radius * Math.sin(d.theta)).strength(1))
+                .stop();
 
             for (let i = 0; i < 300; i++) simulation.tick();
 
