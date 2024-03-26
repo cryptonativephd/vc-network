@@ -138,37 +138,30 @@
                 .attr("cy", d => d.y)
                 .style("fill", d => d.id === selectedVC ? "yellow" : "red");
 
-            // Draw labels
             const labelElements = g.selectAll(".label")
                                     .data(nodes)
                                     .enter()
                                     .append("text")
                                     .attr("x", d => d.x)
                                     .attr("y", function(d) {
-                                        // Basic vertical offset
-                                        let offset = 15;
-                                
-                                        // Increase offset based on node's Y position to spread out labels vertically
-                                        const relativeYPosition = (d.y / height) * 100; // Convert to percentage of total height
-                                        if (relativeYPosition > 50) {
-                                            // If in the lower half of the visualization, push labels further down
-                                            offset += (relativeYPosition - 50) / 5; // Scale adjustment based on position
-                                        } else {
-                                            // If in the upper half, pull labels up (negative offset)
-                                            offset -= (50 - relativeYPosition) / 5;
-                                        }
-                                
-                                        // Adjust based on text length for more fine-tuning
-                                        offset += Math.min(d.id.length, 10); // Adjust based on name length
-                                
-                                        return d.y + offset;
+                                        // Adjusted vertical offset logic
+                                        let baseOffset = 20; // Starting offset from node center
+                                        let additionalOffset = d.id.length > 15 ? 5 : 0; // Additional offset for longer labels
+                                        return d.y + baseOffset + additionalOffset;
                                     })
                                     .text(d => `${d.id}${d.coInvestments ? ` (${d.coInvestments})` : ''}`)
                                     .attr("font-size", "12px")
-                                    .style("text-anchor", "middle");
+                                    .style("text-anchor", "middle")
+                                    .each(function(d) {
+                                        // Basic overlap check (simplified and for illustration purposes)
+                                        let bbox = this.getBBox();
+                                        let aboveNode = { x: d.x, y: d.y - bbox.height };
+                                        if (aboveNode.y < 0) { // If label goes beyond the top boundary
+                                            d3.select(this).attr("y", d.y + bbox.height + 5); // Move label below the node
+                                        }
+                                    });
 
             
-            // Add interactivity
             nodeElements.on('click', function(event, d) {
                 // Ensure we don't trigger updates for the already-selected node
                 if (d.id !== selectedVC) {
