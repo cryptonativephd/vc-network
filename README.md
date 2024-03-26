@@ -16,14 +16,15 @@ Introducing **Coinvestooor** ✨ – a tool designed to help you navigate the in
 3. **Explore and Plan**: Use this information to strategize your networking efforts, ask for intros, and plan your next move in the crypto investment landscape.
 
 ## Getting Started
-To get started with Coinvestooor, simply visit our website at [https://coinvestooor.vercel.app/](https://coinvestooor.vercel.app/) and follow the steps mentioned in the "How It Works" section.
+To get started with Coinvestooor, simply visit the website at [https://coinvestooor.vercel.app/](https://coinvestooor.vercel.app/) and follow the steps mentioned in the "How It Works" section.
 
 ## Known Issues
 • The app is super scrappy since I put it all together within a few hrs.
 • There's still some issue with the formatting.
 
 ## Why Coinvestooor?
-In the rapidly evolving crypto market, knowing who invests with whom can be a powerful piece of intelligence. Whether you're looking to understand the investment landscape, seeking introductions, or planning your fundraising strategy, Coinvestooor provides key insights into the networks that drive the industry.
+During fundraising I faced this issue the first time around, I always knew I had to ask the VC for intro but I never knew whom would be the best person to ask.
+This was also the case when I was a VC - I met other VCs but was unsure of whom best to ask!
 
 ## Feedback
 We love to hear from our users! If you have any feedback, suggestions, or feature requests, feel free to reach out directly via [Twitter](https://twitter.com/advaitjayant).
