@@ -10,7 +10,7 @@
         #searchBox { width: 300px; padding: 10px; font-size: 16px; }
         .link { stroke: #bbb; stroke-opacity: 0.6; stroke-width: 1px; }
         .node circle { stroke: #fff; stroke-width: 1.5px; }
-        .node text { font-size: 10px; fill: #333; pointer-events: none; text-anchor: middle; }
+        .node text { font-size: 10px; fill: #333; pointer-events: none; text-anchor: middle; transform: translateY(15px); }
         svg { cursor: grab; }
         #backButton {
             position: absolute;
@@ -39,7 +39,8 @@
         let width = window.innerWidth;
         let height = window.innerHeight;
         d3.json("vc_investments_graph.json").then(data => { graphData = data; setupVCNamesList(graphData.nodes); });
-
+        svg.call(d3.zoom().on("zoom", (event) => { g.attr("transform", event.transform); }));
+        const colorScale = d3.scaleThreshold().domain([1, 2, 6, 10]).range(["blue", "green", "orange", "black"]);
         function showSearch() {
             document.getElementById('searchContainer').style.display = 'block';
             document.getElementById('backButton').style.display = 'none';
@@ -52,15 +53,7 @@
 
         document.getElementById('backButton').addEventListener('click', showSearch);
 
-        function setupVCNamesList(nodes) { 
-            const vcList = document.getElementById("vcList"); 
-            nodes.forEach(node => { 
-                let option = document.createElement("option"); 
-                option.value = node.id; 
-                vcList.appendChild(option); 
-            }); 
-        }
-
+        function setupVCNamesList(nodes) { const vcList = document.getElementById("vcList"); nodes.forEach(node => { let option = document.createElement("option"); option.value = node.id; vcList.appendChild(option); }); }
         function searchAndDisplay() {
             const searchValue = document.getElementById("searchBox").value;
             const filteredData = filterDataForVC(searchValue);
@@ -72,28 +65,16 @@
                 alert("No VC fund found with the name \"" + searchValue + "\".");
             }
         }
-
-        function filterDataForVC(vcName) { 
-            const nodes = new Map(); 
-            const links = []; 
-            graphData.links.forEach(link => { 
-                if (link.source === vcName || link.target === vcName) { 
-                    links.push(link); 
-                    nodes.set(link.source, graphData.nodes.find(n => n.id === link.source)); 
-                    nodes.set(link.target, graphData.nodes.find(n => n.id === link.target)); 
-                } 
-            }); 
-            return { nodes: Array.from(nodes.values()), links }; 
-        }
-
+        function filterDataForVC(vcName) { const nodes = new Map(); const links = []; graphData.links.forEach(link => { if (link.source === vcName || link.target === vcName) { links.push(link); nodes.set(link.source, graphData.nodes.find(n => n.id === link.source)); nodes.set(link.target, graphData.nodes.find(n => n.id === link.target)); } }); return { nodes: Array.from(nodes.values()), links }; }
         function updateGraph({ nodes, links }, selectedVC) {
             g.selectAll("*").remove();
 
+            // Calculate co-investment counts
             let coInvestmentCounts = {};
             links.forEach(link => {
                 let source = typeof link.source === "object" ? link.source.id : link.source;
                 let target = typeof link.target === "object" ? link.target.id : link.target;
-                if (source === selectedVC or target === selectedVC) {
+                if (source === selectedVC || target === selectedVC) {
                     if (source !== selectedVC) {
                         coInvestmentCounts[source] = (coInvestmentCounts[source] || 0) + link.value;
                     }
@@ -103,98 +84,108 @@
                 }
             });
 
-                    nodes.forEach(node => {
-            node.coInvestments = node.id === selectedVC ? null : coInvestmentCounts[node.id] || 0;
-        });
-
-        const centerX = width / 2;
-        const centerY = height / 2;
-        const selectedNode = nodes.find(node => node.id === selectedVC);
-        selectedNode.fx = centerX;
-        selectedNode.fy = centerY;
-
-        let sortedNodes = nodes.filter(n => n.id !== selectedVC)
-                               .sort((a, b) => b.coInvestments - a.coInvestments);
-
-        let currentNodesPerCircle = 8;
-        let currentRadius = 100;
-
-        while (sortedNodes.length > 0) {
-            let nodesInThisCircle = sortedNodes.splice(0, currentNodesPerCircle);
-            let angleStep = (Math.PI * 2) / nodesInThisCircle.length;
-
-            nodesInThisCircle.forEach((node, index) => {
-                node.theta = angleStep * index;
-                node.radius = currentRadius;
-                node.x = centerX + node.radius * Math.cos(node.theta);
-                node.y = centerY + node.radius * Math.sin(node.theta);
+            nodes.forEach(node => {
+                node.coInvestments = node.id === selectedVC ? null : coInvestmentCounts[node.id] || 0;
             });
 
-            currentNodesPerCircle += 2;
-            currentRadius += 150;
-        }
+            // Set the center for the selected VC
+            const centerX = width / 2;
+            const centerY = height / 2;
+            const selectedNode = nodes.find(node => node.id === selectedVC);
+            selectedNode.fx = centerX;
+            selectedNode.fy = centerY;
 
-        const simulation = d3.forceSimulation(nodes)
-            .force('collide', d3.forceCollide(nodeRadius => 5 + 1))
-            .force('x', d3.forceX(d => d.fx || centerX + d.radius * Math.cos(d.theta)).strength(1))
-            .force('y', d3.forceY(d => d.fy || centerY + d.radius * Math.sin(d.theta)).strength(1))
-            .stop();
+            // Sort nodes by co-investment count and distribute them in circles
+            let sortedNodes = nodes.filter(n => n.id !== selectedVC)
+                                   .sort((a, b) => b.coInvestments - a.coInvestments);
 
-        for (let i = 0; i < 300; i++) simulation.tick();
+            let circleData = [];
+            let currentNodesPerCircle = 8;
+            let currentRadius = 100;
 
-        const nodeElements = g.selectAll(".node")
-            .data(nodes)
-            .enter()
-            .append("circle")
-            .attr("r", 5)
-            .attr("cx", d => d.x)
-            .attr("cy", d => d.y)
-            .style("fill", d => d.id === selectedVC ? "yellow" : "red");
+            while (sortedNodes.length > 0) {
+                let nodesInThisCircle = sortedNodes.splice(0, currentNodesPerCircle);
+                let angleStep = (Math.PI * 2) / nodesInThisCircle.length;
 
-        const labelElements = g.selectAll(".label")
-            .data(nodes)
-            .enter()
-            .append("text")
-            .attr("x", d => d.x)
-            .attr("y", d => d.y + 20 + Math.min(d.id.length, 10)) // Adjusted for dynamic vertical spacing
-            .text(d => `${d.id}${d.coInvestments ? ` (${d.coInvestments})` : ''}`)
-            .attr("font-size", "12px")
-            .style("text-anchor", "middle");
-
-        nodeElements.on('click', function(event, d) {
-            if (d.id !== selectedVC) {
-                nodes.forEach(n => {
-                    n.fx = null;
-                    n.fy = null;
+                nodesInThisCircle.forEach((node, index) => {
+                    node.theta = angleStep * index;
+                    node.radius = currentRadius;
+                    node.x = centerX + node.radius * Math.cos(node.theta);
+                    node.y = centerY + node.radius * Math.sin(node.theta);
                 });
-                updateGraph({ nodes, links }, d.id);
+
+                circleData.push(...nodesInThisCircle);
+                currentNodesPerCircle += 2;
+                currentRadius += 150;
             }
-        });
 
-        function dragstarted(event, d) {
-            if (!event.active) simulation.alphaTarget(0.3).restart();
-            d.fx = event.x;
-            d.fy = event.y;
-        }
+            // Create the simulation
+            const simulation = d3.forceSimulation(nodes)
+                .force('collide', d3.forceCollide(nodeRadius => 5 + 1))
+                .force('x', d3.forceX(d => d.fx || centerX + d.radius * Math.cos(d.theta)).strength(1))
+                .force('y', d3.forceY(d => d.fy || centerY + d.radius * Math.sin(d.theta)).strength(1))
+                .stop();
 
-        function dragged(event, d) {
-            d.fx = event.x;
-            d.fy = event.y;
-        }
+            for (let i = 0; i < 300; i++) simulation.tick();
 
-        function dragended(event, d) {
-            if (!event.active) simulation.alphaTarget(0);
-            if (d.id !== selectedVC) {
-                d.fx = null;
-                d.fy = null;
+            // Draw nodes
+            const nodeElements = g.selectAll(".node")
+                .data(nodes)
+                .enter()
+                .append("circle")
+                .attr("r", 5)
+                .attr("cx", d => d.x)
+                .attr("cy", d => d.y)
+                .style("fill", d => d.id === selectedVC ? "yellow" : "red");
+
+            // Draw labels
+            const labelElements = g.selectAll(".label")
+                .data(nodes)
+                .enter()
+                .append("text")
+                .attr("x", d => d.x)
+                .attr("y", d => d.y + 15 + Math.min(d.id.length, 10))
+                .text(d => `${d.id}${d.coInvestments ? ` (${d.coInvestments})` : ''}`)
+                .attr("font-size", "12px")
+                .style("text-anchor", "middle");
+
+            // Add interactivity
+            nodeElements.on('click', function(event, d) {
+                // Ensure we don't trigger updates for the already-selected node
+                if (d.id !== selectedVC) {
+                    // It's important to actually update the nodes' fixed positions before re-calling updateGraph
+                    nodes.forEach(n => {
+                        n.fx = null;
+                        n.fy = null;
+                    });
+                    updateGraph({ nodes, links }, d.id); // Call updateGraph with the new selected node
+                }
+            });
+
+            function dragstarted(event, d) {
+                if (!event.active) simulation.alphaTarget(0.3).restart();
+                d.fx = d.x;
+                d.fy = d.y;
             }
-        }
 
-        nodeElements.call(d3.drag()
-            .on('start', dragstarted)
-            .on('drag', dragged)
-            .on('end', dragended));
-    }
-</script>
+            function dragged(event, d) {
+                d.fx = event.x;
+                d.fy = event.y;
+            }
+
+            function dragended(event, d) {
+                if (!event.active) simulation.alphaTarget(0);
+                if (d.id !== selectedVC) {
+                    d.fx = null;
+                    d.fy = null;
+                }
+            }
+
+            nodeElements.call(d3.drag()
+                .on('start', dragstarted)
+                .on('drag', dragged)
+                .on('end', dragended));
+        }
+    </script>
 </body>
 </html>
