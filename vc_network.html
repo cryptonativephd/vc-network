@@ -145,7 +145,7 @@
                 .append("text")
                 .attr("x", d => d.x)
                 .attr("y", d => d.y + 15)
-                .text(d => d.id !== selectedVC ? `${d.id} (${d.coInvestments})` : "")
+                .text(d => `${d.id}${d.coInvestments ? ` (${d.coInvestments})` : ''}`)
                 .attr("font-size", "12px")
                 .style("text-anchor", "middle");
 
